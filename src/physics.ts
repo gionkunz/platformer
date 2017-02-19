@@ -2,7 +2,6 @@ import {Vector} from './vector';
 import {Engine} from './engine';
 import {IClockTime, IUpdateable} from './clock';
 import {MapTile} from './game-map';
-import {DebugVector} from "./debug";
 
 export interface IPhysical {
   acceleration: Vector;
@@ -23,11 +22,6 @@ export class Physics implements IUpdateable {
       .scale(1 / this.engine.tileSize)
       .transform(Math.floor);
     this.tileForce = this.engine.map.getTile(tileForcePosition.x, tileForcePosition.y);
-    this.engine.debug.debugVectors['tileForcePosition'] = new DebugVector(
-      tileForcePosition
-        .scale(this.engine.tileSize)
-        .add(new Vector(this.engine.tileSize / 2, this.engine.tileSize / 2))
-    );
 
     if (!this.physical.falling && !this.tileForce.data.forcePriority) {
       tileForcePosition = this.physical.position
@@ -36,20 +30,8 @@ export class Physics implements IUpdateable {
       let tileDown = this.engine.map.getTile(tileForcePosition.x, tileForcePosition.y + 1);
       if (tileDown.data.solid) {
         this.tileForce = tileDown;
-        this.engine.debug.debugVectors['tileForcePosition'] = new DebugVector(
-          tileForcePosition
-            .add(new Vector(0, 1))
-            .scale(this.engine.tileSize)
-            .add(new Vector(this.engine.tileSize / 2, this.engine.tileSize / 2))
-        );
       } else {
         this.tileForce = this.engine.map.getTile(tileForcePosition.x + 1, tileForcePosition.y + 1);
-        this.engine.debug.debugVectors['tileForcePosition'] = new DebugVector(
-          tileForcePosition
-            .add(new Vector(1, 1))
-            .scale(this.engine.tileSize)
-            .add(new Vector(this.engine.tileSize / 2, this.engine.tileSize / 2))
-        );
       }
     }
 
@@ -65,7 +47,6 @@ export class Physics implements IUpdateable {
       forces = forces.add(this.engine.gravity);
     }
 
-    this.engine.debug.debugVariables['acceleration'] = this.physical.acceleration;
     // Adding acceleration to forces
     forces = forces.add(this.physical.acceleration);
 
@@ -77,9 +58,6 @@ export class Physics implements IUpdateable {
     // Integration of forces and velocity
     this.physical.position = this.physical.position.add(this.physical.velocity.scale(data.step));
     this.physical.velocity = this.physical.velocity.add(forces.scale(data.step)).narrow(this.engine.maxVelocity);
-
-    this.engine.debug.debugVariables['forces'] = forces;
-    this.engine.debug.debugVariables['velocity'] = this.physical.velocity;
 
     // Friction on velocity
     if (this.tileForce.friction) {

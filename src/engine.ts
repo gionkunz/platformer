@@ -4,9 +4,13 @@ import {Camera} from './camera';
 import {Clock, IClockTime} from './clock';
 import {Player} from './entities/player';
 import {Coin} from './entities/coin';
-import {Debug} from './debug';
 import {AudioEnvironment} from './audio/audio-environment';
-import {drawTile, graphicTiles, GraphicsTile} from './graphics/tiles';
+import {
+  drawTile,
+  GraphicsTile,
+  CompoundGraphicsTileProvider,
+  MapGroundGraphicsTileProvider, MapIceGraphicsTileProvider
+} from './graphics/graphics-tile';
 
 export interface IDrawable {
   draw(engine: Engine, data: IClockTime);
@@ -23,12 +27,12 @@ export class Engine {
   gravity: Vector;
   friction: Vector;
   maxVelocity: Vector;
-  debug: Debug;
   entities: any[];
   player: Player;
   audioEnvironment: AudioEnvironment;
+  mapTileProvider: CompoundGraphicsTileProvider;
 
-  constructor(public canvas: HTMLCanvasElement, viewportWidth: number, viewportHeight: number, debugElement?: HTMLElement) {
+  constructor(public canvas: HTMLCanvasElement, viewportWidth: number, viewportHeight: number) {
     this.canvas.width = viewportWidth;
     this.canvas.height = viewportHeight;
     this.renderingContext = this.canvas.getContext('2d');
@@ -41,7 +45,6 @@ export class Engine {
     this.audioEnvironment = new AudioEnvironment(new AudioContext());
     this.audioEnvironment.audioBufferLoader.load('jump', '/assets/sounds/jump_11.wav');
     this.audioEnvironment.audioBufferLoader.load('coin', '/assets/sounds/coin.wav');
-    this.debug = new Debug(this, debugElement);
   }
 
   meters(v) {
@@ -63,7 +66,7 @@ export class Engine {
       this.entities
         .filter((entity) => entity instanceof Coin)
         .forEach((coin) => {
-          if (this.player.position.subtract(coin.position).magnitude() < 16) {
+          if (this.player.position.subtract(coin.position).magnitude() < this.tileSize) {
             this.audioEnvironment.play('coin');
             this.entities.splice(this.entities.indexOf(coin), 1);
           }
@@ -76,7 +79,6 @@ export class Engine {
       this.drawMap();
       this.entities.forEach((entity) => entity.draw(this, data));
       this.drawMap(true);
-      this.debug.draw();
     });
 
     this.entities = map.mapData.entities.map((entityData) => {
@@ -102,6 +104,10 @@ export class Engine {
     );
 
     this.renderingContext.clearRect(0, 0, this.viewport.width(), this.viewport.height());
+
+    this.mapTileProvider = new CompoundGraphicsTileProvider();
+    this.mapTileProvider.add(new MapGroundGraphicsTileProvider(this.map));
+    this.mapTileProvider.add(new MapIceGraphicsTileProvider(this.map));
   }
 
   loadMap(url) {
@@ -112,8 +118,8 @@ export class Engine {
   }
 
   drawMap(foreground?: boolean) {
-    for(let y = 0; y < this.map.size.y; y++) {
-      for(let x = 0; x < this.map.size.x; x++) {
+    for (let y = 0; y < this.map.size.y; y++) {
+      for (let x = 0; x < this.map.size.x; x++) {
         const projectedPosition: Vector = new Vector(
           x * this.tileSize,
           y * this.tileSize
@@ -122,9 +128,11 @@ export class Engine {
         const tile = this.map.getTile(x, y);
 
         if (this.clipBox.isCoordinatesInside(projectedPosition) && tile.data.foreground === foreground) {
-          const graphicTile: GraphicsTile = graphicTiles.get(tile.data.name);
-          if (graphicTile) {
-            drawTile(graphicTile, this.renderingContext, projectedPosition.x, projectedPosition.y, this.tileSize, this.tileSize);
+          const graphicsTile: GraphicsTile =
+            this.mapTileProvider.provideGraphicsTile({x, y});
+
+          if (graphicsTile) {
+            drawTile(graphicsTile, this.renderingContext, projectedPosition.x, projectedPosition.y, this.tileSize, this.tileSize);
           } else {
             this.renderingContext.fillStyle = tile.data.colour;
             this.renderingContext.fillRect(

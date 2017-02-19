@@ -1,15 +1,11 @@
-.debug-element {
-  font-family: monospace;
-  font-size: 11px;
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
   display: flex;
-}
-
-.debug-element__box {
-  padding: 10px;
-  width: 50%;
-}
-
-.debug-element__box--inverted {
-  background-color: #222;
-  color: #efefef;
+  justify-content: center;
+  align-items: center;
 }

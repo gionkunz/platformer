@@ -55,8 +55,6 @@ export class Player implements IUpdateable, IDrawable, ICameraTarget, IPhysical 
   draw(engine: Engine, data: IClockTime) {
     const projectedPosition = this.position.subtract(engine.camera.position);
 
-    engine.debug.debugVariables['playerTilePos'] = this.position.scale(1 / engine.tileSize).transform(Math.floor);
-
     if (engine.clipBox.isCoordinatesInside(projectedPosition)) {
       engine.renderingContext.fillStyle = '#f00';
       engine.renderingContext.fillRect(

@@ -23,7 +23,7 @@ export interface IMapData {
   tileSize: number;
   gravity: IMapCoordinates;
   entities: {
-    type: string, 
+    type: string,
     location: IMapCoordinates,
     pivot: IMapCoordinates,
     data?: any
@@ -88,7 +88,7 @@ export class GameMap {
     }
   }
 
-  getTile(x: number, y: number) {
+  getTile(x: number, y: number): MapTile {
     if (y in this.tiles && x in this.tiles[y]) {
       return this.tiles[y][x];
     } else {

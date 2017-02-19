@@ -1,3 +1,4 @@
+import FPSMeter from 'darsain/fpsmeter/dist/fpsmeter';
 import {Vector, BBox} from './vector';
 import {GameMap, IMapData} from './game-map';
 import {Camera} from './camera';
@@ -8,8 +9,8 @@ import {AudioEnvironment} from './audio/audio-environment';
 import {
   drawTile,
   GraphicsTile,
-  CompoundGraphicsTileProvider,
-  MapGroundGraphicsTileProvider, MapIceGraphicsTileProvider
+  MapKeyGraphicsTileProvider,
+  NineSliceGraphicsTileProvider, ThreeSliceGraphicsTileProvider, SimpleGraphicsTileProvider, LiquidGraphicsTileProvider
 } from './graphics/graphics-tile';
 
 export interface IDrawable {
@@ -30,7 +31,8 @@ export class Engine {
   entities: any[];
   player: Player;
   audioEnvironment: AudioEnvironment;
-  mapTileProvider: CompoundGraphicsTileProvider;
+  mapTileProvider: MapKeyGraphicsTileProvider;
+  debug: boolean = false;
 
   constructor(public canvas: HTMLCanvasElement, viewportWidth: number, viewportHeight: number) {
     this.canvas.width = viewportWidth;
@@ -43,8 +45,11 @@ export class Engine {
     );
     this.clock = new Clock(1);
     this.audioEnvironment = new AudioEnvironment(new AudioContext());
-    this.audioEnvironment.audioBufferLoader.load('jump', '/assets/sounds/jump_11.wav');
-    this.audioEnvironment.audioBufferLoader.load('coin', '/assets/sounds/coin.wav');
+
+    if (this.debug) {
+      const fpsMeter = new FPSMeter();
+      this.clock.fullTick.subscribe(() => fpsMeter.tick());
+    }
   }
 
   meters(v) {
@@ -75,6 +80,7 @@ export class Engine {
       this.camera.update(data);
     });
     this.clock.fullTick.subscribe((data: IClockTime) => {
+      this.audioEnvironment.update(data);
       this.renderingContext.clearRect(0, 0, this.viewport.width(), this.viewport.height());
       this.drawMap();
       this.entities.forEach((entity) => entity.draw(this, data));
@@ -85,12 +91,10 @@ export class Engine {
       if (entityData.type === 'player') {
         return new Player(
           Vector.from(entityData.location).scale(this.tileSize),
-          Vector.from(entityData.pivot),
           this);
       } else if (entityData.type === 'coin') {
         return new Coin(
           Vector.from(entityData.location).scale(this.tileSize),
-          Vector.from(entityData.pivot),
           this);
       }
     });
@@ -105,9 +109,13 @@ export class Engine {
 
     this.renderingContext.clearRect(0, 0, this.viewport.width(), this.viewport.height());
 
-    this.mapTileProvider = new CompoundGraphicsTileProvider();
-    this.mapTileProvider.add(new MapGroundGraphicsTileProvider(this.map));
-    this.mapTileProvider.add(new MapIceGraphicsTileProvider(this.map));
+    this.mapTileProvider = new MapKeyGraphicsTileProvider();
+    this.mapTileProvider.set('ground', new NineSliceGraphicsTileProvider(this.map, 2, 7));
+    this.mapTileProvider.set('ice', new NineSliceGraphicsTileProvider(this.map, 13, 6));
+    this.mapTileProvider.set('dirt', new NineSliceGraphicsTileProvider(this.map, 5, 14));
+    this.mapTileProvider.set('platform', new ThreeSliceGraphicsTileProvider(this.map, 10, 16));
+    this.mapTileProvider.set('water', new LiquidGraphicsTileProvider(this.map, this.clock, 'water', 0, 4));
+    this.mapTileProvider.set('slime', new LiquidGraphicsTileProvider(this.map, this.clock, 'slime', 0, 2));
   }
 
   loadMap(url) {
@@ -129,7 +137,9 @@ export class Engine {
 
         if (this.clipBox.isCoordinatesInside(projectedPosition) && tile.data.foreground === foreground) {
           const graphicsTile: GraphicsTile =
-            this.mapTileProvider.provideGraphicsTile({x, y});
+            this.mapTileProvider.provideGraphicsTile({key: tile.data.name, x, y});
+
+          this.renderingContext.globalAlpha = tile.data.alpha || 1;
 
           if (graphicsTile) {
             drawTile(graphicsTile, this.renderingContext, projectedPosition.x, projectedPosition.y, this.tileSize, this.tileSize);
@@ -141,6 +151,12 @@ export class Engine {
               this.tileSize,
               this.tileSize
             );
+          }
+
+          if (this.debug) {
+            this.renderingContext.fillStyle = '#ff00ff';
+            this.renderingContext.font = '8px sans-serif';
+            this.renderingContext.fillText(`${x},${y}`, projectedPosition.x + this.tileSize / 2 - 4, projectedPosition.y + this.tileSize / 2, 12);
           }
         }
       }

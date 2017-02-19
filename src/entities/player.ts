@@ -4,6 +4,7 @@ import {IClockTime, IUpdateable} from '../clock';
 import {ICameraTarget} from '../camera';
 import {IPhysical, Physics} from '../physics';
 import {getGamepadSnapshot} from '../input/gamepad-input';
+import {drawTile, PlayerGraphicsTileProvider} from '../graphics/graphics-tile';
 
 export class Player implements IUpdateable, IDrawable, ICameraTarget, IPhysical {
   acceleration: Vector = new Vector(0, 0);
@@ -13,15 +14,16 @@ export class Player implements IUpdateable, IDrawable, ICameraTarget, IPhysical 
   jump: boolean;
   jumpDebounce: number = 20;
   sunk: boolean = false;
+  graphicsTileProvider: PlayerGraphicsTileProvider = new PlayerGraphicsTileProvider(this, this.engine.clock);
 
-  constructor(public position: Vector, public pivot: Vector, public engine: Engine) {
+  constructor(public position: Vector, public engine: Engine) {
     this.physics = new Physics(engine, this);
   }
 
   update(data: IClockTime) {
     const gamepadSnapshot = getGamepadSnapshot(0);
     if (gamepadSnapshot && gamepadSnapshot.changed) {
-      const normalizeValue = (v) => Math.abs(v) < 0.1 ? 0 : v;
+      const normalizeValue = (v) => Math.abs(v) < 0.15 ? 0 : v;
       this.acceleration.x =
         normalizeValue(gamepadSnapshot.gamepad.axes[0]) * this.engine.meters(300);
       this.acceleration.y =
@@ -41,23 +43,16 @@ export class Player implements IUpdateable, IDrawable, ICameraTarget, IPhysical 
       this.physics.update(data);
     }
 
-    if (['water', 'slime'].includes(this.physics.tileForce.data.name)) {
-      if (!this.sunk) {
-        this.sunk = true;
-        this.engine.audioEnvironment.nearConvolution('ir-muffler', 0.9);
-      }
-    } else {
-      this.sunk = false;
-      this.engine.audioEnvironment.nearConvolution(null, 0);
-    }
+    this.engine.audioEnvironment.setAudioOriginTile(this.physics.tileForce)
   }
 
   draw(engine: Engine, data: IClockTime) {
     const projectedPosition = this.position.subtract(engine.camera.position);
 
     if (engine.clipBox.isCoordinatesInside(projectedPosition)) {
-      engine.renderingContext.fillStyle = '#f00';
-      engine.renderingContext.fillRect(
+      drawTile(
+        this.graphicsTileProvider.provideGraphicsTile(),
+        engine.renderingContext,
         projectedPosition.x,
         projectedPosition.y,
         engine.tileSize,

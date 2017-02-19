@@ -1,4 +1,5 @@
 import {Vector} from './vector';
+import {ConvolutionSettings} from './audio/audio-environment';
 
 export interface IMapCoordinates {
   x: number;
@@ -15,6 +16,9 @@ export interface IMapTileData {
   friction?: IMapCoordinates;
   acceleration?: IMapCoordinates;
   forcePriority?: boolean;
+  farConvolution?: ConvolutionSettings;
+  nearConvolution?: ConvolutionSettings;
+  alpha?: number;
 }
 
 export interface IMapData {
@@ -25,7 +29,6 @@ export interface IMapData {
   entities: {
     type: string,
     location: IMapCoordinates,
-    pivot: IMapCoordinates,
     data?: any
   }[];
 }
@@ -58,13 +61,13 @@ export class MapTile {
 
 export const TILE_DATA_UNKNOWN: IMapTileData = <IMapTileData>{
   name: 'unknown',
-  solid: true,
+  solid: false,
   colour: 'transparent'
 };
 
 export const TILE_DATA_END: IMapTileData = <IMapTileData>{
   name: 'end',
-  solid: true,
+  solid: false,
   colour: 'transparent'
 };
 

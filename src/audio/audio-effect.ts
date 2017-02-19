@@ -1,8 +1,12 @@
-export class AudioEffect {
+import {IUpdateable, IClockTime} from '../clock';
+import {AnimationValue} from '../util/animation-value';
+
+export class AudioEffect implements IUpdateable {
   input: GainNode;
   output: GainNode;
   private dryGain: GainNode;
   private wetGain: GainNode;
+  private ratioAnimation: AnimationValue;
 
   constructor(private audioContext: AudioContext, public effectNodes: AudioNode[]) {
     this.output = audioContext.createGain();
@@ -22,11 +26,16 @@ export class AudioEffect {
 
     effectNodes[effectNodes.length - 1].connect(this.output);
 
-    this.setDryWet(0);
+    this.ratioAnimation = new AnimationValue(0);
+  }
+
+  update(time: IClockTime) {
+    this.ratioAnimation.update(time);
+    this.dryGain.gain.value = 1 - this.ratioAnimation.value;
+    this.wetGain.gain.value = this.ratioAnimation.value;
   }
 
   setDryWet(ratio: number) {
-    this.dryGain.gain.value = 1 - ratio;
-    this.wetGain.gain.value = ratio;
+    this.ratioAnimation.animateTo(ratio, 0.1);
   }
 }

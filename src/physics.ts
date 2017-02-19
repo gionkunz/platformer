@@ -7,7 +7,6 @@ export interface IPhysical {
   acceleration: Vector;
   position: Vector;
   velocity: Vector;
-  pivot: Vector;
   falling: boolean;
 }
 
@@ -18,7 +17,6 @@ export class Physics implements IUpdateable {
 
   update(data: IClockTime) {
     let tileForcePosition = this.physical.position
-      .add(this.physical.pivot)
       .scale(1 / this.engine.tileSize)
       .transform(Math.floor);
     this.tileForce = this.engine.map.getTile(tileForcePosition.x, tileForcePosition.y);

@@ -7,7 +7,7 @@ export class Coin implements IUpdateable, IDrawable {
   seq: number = 0;
   graphicsTileProvider: AnimatedGraphicsTileProvider;
 
-  constructor(public position: Vector, public pivot: Vector, public engine: Engine) {
+  constructor(public position: Vector, public engine: Engine) {
     this.graphicsTileProvider = new AnimatedGraphicsTileProvider(engine.clock, 0.2, [
       {x: 3, y: 17},
       {x: 4, y: 17},

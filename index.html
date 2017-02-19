@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Platformer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<canvas class="game-canvas"></canvas>
+<div class="debug-element">
+  <div class="debug-element__box debug-variables"></div>
+  <div class="debug-element__box debug-element__box--inverted debug-logs"></div>
+</div>
+
+<script src="jspm_packages/system.js"></script>
+<script src="./config.js"></script>
+<script>
+  System.import('src/main').catch((error) => console.log(error));
+</script>
+</body>
+</html>

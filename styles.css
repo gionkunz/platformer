@@ -1,0 +1,15 @@
+.debug-element {
+  font-family: monospace;
+  font-size: 11px;
+  display: flex;
+}
+
+.debug-element__box {
+  padding: 10px;
+  width: 50%;
+}
+
+.debug-element__box--inverted {
+  background-color: #222;
+  color: #efefef;
+}
